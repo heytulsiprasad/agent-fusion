@@ -173,6 +173,9 @@ The cross-family slots are wrappers: a cheap agent shells out and the real
 reasoning happens on the other model's bill, not in your context. "Three
 reviewers" is not three times the cost of one.
 
+**Full per-agent breakdown — all 18 call sites, which model runs each, and why:
+[docs/AGENT_MATRIX.md](docs/AGENT_MATRIX.md).**
+
 Both cross-family slots are **optional**. Missing advisors are reported as
 missing — never faked, never silently replaced by the orchestrator's own opinion.
 
