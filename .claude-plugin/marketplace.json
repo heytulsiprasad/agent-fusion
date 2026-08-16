@@ -1,0 +1,15 @@
+{
+  "name": "agent-fusion",
+  "description": "Gate-first multi-model orchestration for Claude Code — prove the work with a gate written before the code, build in parallel against a frozen contract, and review with three independent models.",
+  "owner": { "name": "Tulsi Prasad", "url": "https://github.com/heytulsiprasad" },
+  "plugins": [
+    {
+      "name": "fusion",
+      "source": "./plugins/fusion",
+      "description": "The /fuse and /pr-evidence workflows plus a fail-open push gate. Divergent work (scout, plan, review) runs blind and in parallel so agreement is evidence, not an echo; convergent work (build) runs coordinated against a contract the architect freezes up front. Model-agnostic: roles are slots, not model names.",
+      "category": "workflow",
+      "keywords": ["multi-agent", "orchestration", "model-fusion", "cross-model", "code-review", "verification"],
+      "license": "MIT"
+    }
+  ]
+}

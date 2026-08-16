@@ -1,0 +1,13 @@
+{
+  "description": "Push gate — nudges for a cross-model review before git push/commit. Fail-open; never blocks.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          { "type": "command", "command": "python3", "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/push_gate.py"] }
+        ]
+      }
+    ]
+  }
+}
