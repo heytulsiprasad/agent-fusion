@@ -1,11 +1,12 @@
 ---
-name: fuse
+name: fusion
 description: Run a change through the gate-first fusion harness — an acceptance gate written before any code exists, parallel builders against a frozen contract, and three independent models reviewing the diff. Use when a change is big enough to want planned, proven and cross-reviewed without babysitting, spans more than one repo or surface, or touches something expensive to get wrong (money, migrations, auth, tenant boundaries). Also use when asked to "fuse", "run the harness", or for a multi-model build or review.
 ---
 
-# Fuse
+# Fusion
 
-Run the `fuse` workflow. It is a script, not a set of instructions — the loop,
+Run the `fuse` workflow. This skill is the operator's guide; `fuse` itself is
+the script. It is a script, not a set of instructions — the loop,
 the gate check and the fan-out are real control flow, so no phase can be skipped
 by forgetting it.
 
