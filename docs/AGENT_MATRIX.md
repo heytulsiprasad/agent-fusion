@@ -3,7 +3,7 @@
 Every agent this harness spawns, what model runs it, and why.
 
 Derived from the code. The authoritative source is the constant block at the top
-of [`workflows/fuse.js`](../workflows/fuse.js) — if this table and that block
+of [`plugins/fusion/workflows/fuse.js`](../plugins/fusion/workflows/fuse.js) — if this table and that block
 disagree, the code is right and this file is stale.
 
 ---
@@ -138,7 +138,7 @@ the Review triple, where the evidence for a second opinion is actual.
 
 ## Changing it
 
-One line each, in `workflows/fuse.js`:
+One line each, in `plugins/fusion/workflows/fuse.js`:
 
 ```js
 const BUILDER = { model: 'sonnet', effort: 'max' }   // cheaper builds everywhere

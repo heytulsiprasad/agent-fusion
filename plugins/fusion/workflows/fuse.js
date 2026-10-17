@@ -698,7 +698,7 @@ phase('Evidence')
 let evidence = null
 if (!SKIP_EVIDENCE) {
   try {
-    evidence = await workflow('pr-evidence', { repo: REPO, task: TASK })
+    evidence = await workflow('fusion:pr-evidence', { repo: REPO, task: TASK })
   } catch (e) {
     log(`pr-evidence unavailable (${e.message}) — skipping the evidence section`)
   }

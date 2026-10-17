@@ -5,13 +5,13 @@ description: Run a change through the gate-first fusion harness — an acceptanc
 
 # Fusion
 
-Run the `fuse` workflow. This skill is the operator's guide; `fuse` itself is
-the script. It is a script, not a set of instructions — the loop,
-the gate check and the fan-out are real control flow, so no phase can be skipped
-by forgetting it.
+Run the `fusion:fuse` workflow, which ships in this plugin. This skill is the
+operator's guide; `fusion:fuse` itself is the script. It is a script, not a set
+of instructions — the loop, the gate check and the fan-out are real control
+flow, so no phase can be skipped by forgetting it.
 
 ```
-Workflow({ name: "fuse", args: { task: "<what to build>", repo: "." } })
+Workflow({ name: "fusion:fuse", args: { task: "<what to build>", repo: "." } })
 ```
 
 ## Arguments
@@ -53,6 +53,6 @@ consensus / divergence / discarded.
 
 ## Related
 
-`/pr-evidence` builds the evidence section for a PR body — crow's-foot before
-and after ER diagrams for schema changes, before/after screenshots for UI. It
-runs standalone or as the last phase of `fuse`.
+`fusion:pr-evidence` builds the evidence section for a PR body — crow's-foot
+before and after ER diagrams for schema changes, before/after screenshots for
+UI. It runs standalone or as the last phase of `fusion:fuse`.

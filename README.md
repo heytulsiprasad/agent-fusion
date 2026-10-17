@@ -6,7 +6,7 @@ Write the proof before the code. Build in parallel against a frozen contract.
 Have three models review the diff without letting any of them see each other.
 
 ```
-Workflow({ name: "fuse", args: { task: "add a deposited_at timestamp to collections", repo: "." } })
+Workflow({ name: "fusion:fuse", args: { task: "add a deposited_at timestamp to collections", repo: "." } })
 ```
 
 ---
@@ -184,29 +184,29 @@ missing — never faked, never silently replaced by the orchestrator's own opini
 ## Install
 
 ```bash
-git clone https://github.com/heytulsiprasad/agent-fusion.git
-cd agent-fusion && ./install.sh          # user scope — every project
-./install.sh /path/to/repo               # project scope
-./install.sh --link                      # symlink, so edits track this repo
-```
-
-Optionally add the plugin for the skill and the push gate:
-
-```bash
 claude plugin marketplace add heytulsiprasad/agent-fusion
 claude plugin install fusion@agent-fusion
 ```
 
-Claude Code plugins have no `workflows` component type, which is why the scripts
-install separately. The plugin ships the discovery skill and a fail-open push
-gate that nudges for a cross-model review before `git push`.
+The plugin ships everything: the `fusion:fuse` and `fusion:pr-evidence`
+workflows, the operator skill, and a fail-open push gate that nudges for a
+cross-model review before `git push`. To update:
+
+```bash
+claude plugin marketplace update agent-fusion
+claude plugin update fusion@agent-fusion
+```
+
+Installed with the old `install.sh`? Delete `~/.claude/workflows/fuse.js` and
+`~/.claude/workflows/pr-evidence.js`. The plugin replaces them, and a stale copy
+would still run under the bare name `fuse`.
 
 ---
 
 ## Usage
 
 ```js
-Workflow({ name: "fuse", args: {
+Workflow({ name: "fusion:fuse", args: {
   task: "add a deposited_at timestamp to collections and surface it in the register",
   repo: ".",
   houseRules: "resolve the tenant timezone before comparing against TIMESTAMPTZ"
@@ -221,7 +221,7 @@ Workflow({ name: "fuse", args: {
 | `houseRules` | `''` | extra review lenses for this codebase |
 | `skipEvidence` | `false` | skip the PR-evidence phase |
 
-`/pr-evidence` also runs standalone — crow's-foot before/after `erDiagram` blocks
+`fusion:pr-evidence` also runs standalone — crow's-foot before/after `erDiagram` blocks
 for schema changes, before/after screenshots for UI changes.
 
 ---
