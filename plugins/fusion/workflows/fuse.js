@@ -3,22 +3,21 @@ export const meta = {
   description: 'Gate-first multi-model build: blind scout, plan + failing gate, build, verify loop, blind review, fusion merge, PR evidence',
   whenToUse: 'A change big enough that you want it planned, proven and cross-reviewed without babysitting. Pass args: {task, repo, maxRounds}.',
   phases: [
-    { title: 'Scout', detail: 'three blind perspectives — repo read, codex research, gemini query' },
+    { title: 'Scout', detail: 'two blind perspectives — repo read, codex research' },
     { title: 'Gate', detail: 'architect writes the plan and an acceptance gate that MUST fail first' },
     { title: 'Build', detail: 'slices build in parallel against a frozen contract; drift re-freezes once' },
     { title: 'Verify', detail: 'run the gate, feed the fail lines back, bounded rounds' },
-    { title: 'Review', detail: 'three blind reviewers on the diff' },
+    { title: 'Review', detail: 'two blind reviewers on the diff — codex and local' },
     { title: 'Fuse', detail: 'a fresh architect merges: consensus, divergence, discarded' },
     { title: 'Fix', detail: 'builder applies CRITICAL and HIGH, then the gate re-runs' },
-    { title: 'Evidence', detail: 'terra builds the PR evidence section' },
+    { title: 'Evidence', detail: 'pr-evidence builds the PR evidence section' },
   ],
 }
 
 // ─── Roster ────────────────────────────────────────────────────────────────
 // Roles are slots, not model names. Swap a model here and nothing else moves.
-// Cross-family slots are not listed here. Codex is selected per call via the
-// codex plugin's `--model` / `--effort`; antigravity auto-picks the deepest
-// Gemini Pro tier and REJECTS a caller-side model argument.
+// The cross-family slot is not listed here. Codex is selected per call via the
+// codex plugin's `--model` / `--effort`.
 // EFFORT POLICY: everything runs at max. Nothing runs below high, ever — a slot
 // that looks mechanical still decides what to report, and a cheap decision there
 // is the one nobody re-checks. Two exceptions, both deliberate:
@@ -63,14 +62,11 @@ INDEPENDENCE RULES — these decide whether the answer is worth anything.
 - Send the EVIDENCE and the QUESTION. Never send your own diagnosis or your
   preferred design. A prompt that names your answer gets you a critique of your
   answer, never the better option nobody put on the table.
-- Hold your own view back completely in round 1. If the tool offers a dedicated
-  hypothesis channel — antigravity takes \`caller_hypothesis\` — use THAT and only
-  that: it presents your view as a claim to REFUTE and returns an explicit
-  CONFIRMED / REFUTED / UNPROVEN verdict. Codex through the plugin runtime has no
-  such channel, so there you simply do not state it.
-- Never smuggle a conclusion into a scoping field (\`context\`, \`focus\`, \`topic\`).
-  Antigravity lint-checks these and prints an ANCHORING WARNING on a hit; the
-  Codex path has no lint, so nothing will catch you but you.
+- Hold your own view back completely in round 1. Codex through the plugin
+  runtime has no hypothesis channel, so you simply do not state it.
+- Never smuggle a conclusion into a scoping argument, such as the
+  adversarial-review focus text. Nothing lints the Codex path for this, so
+  nothing will catch you but you.
 - Every version, API, CVE, pricing or best-practice claim needs a live source
   URL. An uncited claim was answered from memory — re-ask, do not repeat it.
 `
@@ -93,8 +89,6 @@ parameter accepted then ignored, clamped or silently downgraded.
 // JSON schema, and gives job tracking (status/result/cancel) for free.
 // The path globs the version so a plugin update does not break this.
 const CODEX = 'node "$(ls -1d "$HOME"/.claude/plugins/cache/openai-codex/codex/*/scripts/codex-companion.mjs | sort -V | tail -1)"'
-const LOAD_GEMINI = 'FIRST call ToolSearch(query="antigravity", max_results: 12) to load the antigravity MCP tools. They are deferred and cannot be called before that. If they are unavailable in this environment, say so and return empty findings rather than substituting your own opinion.'
-
 // ─── Schemas ───────────────────────────────────────────────────────────────
 
 const SCOUT = {
@@ -193,7 +187,6 @@ const REVIEW = {
       },
     },
     sources: { type: 'array', items: { type: 'string' } },
-    anchoring_warning: { type: 'boolean', description: 'True if any advisor answer carried an ANCHORING WARNING banner' },
   },
 }
 
@@ -220,8 +213,8 @@ const FUSION = {
   },
 }
 
-// ─── Phase 1: Scout — three blind perspectives ─────────────────────────────
-// A barrier is correct here: the architect reads all three before planning.
+// ─── Phase 1: Scout — two blind perspectives ───────────────────────────────
+// A barrier is correct here: the architect reads both before planning.
 
 phase('Scout')
 log(`fuse: ${TASK}`)
@@ -261,26 +254,10 @@ came back with no URL, re-ask once before reporting it. If the command fails or
 Codex was never invoked, say so and return empty findings — do NOT substitute
 your own answer for the one Codex did not give.`,
     { label: 'scout:codex', phase: 'Scout', schema: SCOUT, ...RUNNER }),
-
-  () => agent(`${LOAD_GEMINI}
-
-Get an independent read on this problem from Gemini.
-
-TASK: ${TASK}
-REPO: ${REPO}
-
-Use \`antigravity_query\` (or \`antigravity_brainstorm\` if the task is a design
-question). Do not pass a model argument — the server picks the deepest Pro tier
-itself and rejects the parameter.
-${BLIND}
-Gemini is the SECONDARY advisor here. Report its findings as corroboration, and
-flag anything it raised that the others may not — that is the whole reason it is
-in the run.`,
-    { label: 'scout:gemini', phase: 'Scout', schema: SCOUT, ...RUNNER }),
 ])).filter(Boolean)
 
 if (!scouts.length) return { status: 'aborted', reason: 'every scout failed' }
-log(`Scout: ${scouts.length}/3 returned`)
+log(`Scout: ${scouts.length}/2 returned`)
 
 const brief = scouts.map((s, i) => `--- scout ${i + 1} ---\n${s.findings}\nFILES: ${(s.files || []).join(', ')}\nRISKS:\n${(s.risks || []).map(r => '- ' + r).join('\n')}`).join('\n\n')
 
@@ -296,7 +273,7 @@ const GATE_BRIEF = `You are the ARCHITECT. You plan and you write the acceptance
 TASK: ${TASK}
 REPO: ${REPO}
 
-RECONNAISSANCE FROM THREE INDEPENDENT SCOUTS:
+RECONNAISSANCE FROM TWO INDEPENDENT SCOUTS:
 ${brief}
 
 Do four things.
@@ -547,7 +524,7 @@ The gate at ${plan.gate_path} stays READ-ONLY.`,
 const gatePassed = !!(verdict && verdict.exit_code === 0)
 log(gatePassed ? `Gate PASSED after ${round} round(s)` : `Gate still FAILING after ${round} round(s) — review runs anyway`)
 
-// ─── Phase 5: Review — three blind reviewers on the diff ───────────────────
+// ─── Phase 5: Review — two blind reviewers on the diff ─────────────────────
 // The diff goes out. The story does not. Nobody is told what the fix was for.
 
 phase('Review')
@@ -558,7 +535,7 @@ Factual scope only: this repo implements ${TASK.slice(0, 200)}.
 
 Do NOT be told what the change fixes and do not assume it works. Find the defects.`
 
-const reviews = (await parallel([
+const [codexReview, localReview] = await parallel([ // index-aligned; null where a reviewer died
   () => agent(`${DIFF_BRIEF}
 
 Codex (gpt-6.1-sol, high) is the PRIMARY reviewer — its verdict governs unless
@@ -581,20 +558,6 @@ ${RUNTIME_CAPABILITY}
 If either command fails or Codex was never invoked, say so and return what you
 did get. Never invent findings to fill the gap left by a run that did not happen.`,
     { label: 'review:codex', phase: 'Review', schema: REVIEW, ...RUNNER }),
-
-  () => agent(`${LOAD_GEMINI}
-
-${DIFF_BRIEF}
-
-Run \`antigravity_review_pr\` on the diff with strictness "strict", then
-\`antigravity_analyze_code\` on the riskiest section with focus "security" and
-again with focus "performance". Do not pass a model argument.
-${BLIND}
-${RUNTIME_CAPABILITY}
-Gemini is SECONDARY — corroboration, not authority. But a finding only it raised
-is still real: verify it on its merits. "The others did not say it" is not a
-refutation.`,
-    { label: 'review:gemini', phase: 'Review', schema: REVIEW, ...RUNNER }),
 
   () => agent(`${DIFF_BRIEF}
 
@@ -620,42 +583,38 @@ reaches production.
 ${RUNTIME_CAPABILITY}
 Report findings with severity, file, line and the concrete failing input.`,
     { label: 'review:local', phase: 'Review', schema: REVIEW, ...BUILDER }),
-])).filter(Boolean)
+])
 
+const reviews = [codexReview, localReview].filter(Boolean)
 const allFindings = reviews.flatMap(r => r.findings || [])
-const contaminated = reviews.some(r => r.anchoring_warning)
-log(`Review: ${allFindings.length} findings from ${reviews.length}/3 reviewers${contaminated ? ' (one dispatch was ANCHORED)' : ''}`)
+log(`Review: ${allFindings.length} findings from ${reviews.length}/2 reviewers`)
 
-// ─── Phase 6: Fuse — a fresh architect merges the three reads ──────────────
+// ─── Phase 6: Fuse — a fresh architect merges the two reads ────────────────
 // Fresh matters. An architect carrying the build context would defend the build.
 
 phase('Fuse')
 
-const fused = await agent(`You are the FUSER. You did not plan this change and you did not build it. Merge three independent reviews into one verdict.
+const fused = await agent(`You are the FUSER. You did not plan this change and you did not build it. Merge two independent reviews into one verdict.
 
 TASK: ${TASK}
 REPO: ${REPO}
 GATE RESULT: ${gatePassed ? 'PASSED' : 'STILL FAILING — ' + ((verdict && verdict.output) || 'no output').slice(0, 800)}
 
 REVIEW 1 — Codex (gpt-6.1-sol high, PRIMARY):
-${JSON.stringify(reviews[0] && reviews[0].findings || [], null, 1)}
+${JSON.stringify(codexReview && codexReview.findings || [], null, 1)}
 
-REVIEW 2 — Gemini (gemini-3.1-pro-high, SECONDARY):
-${JSON.stringify(reviews[1] && reviews[1].findings || [], null, 1)}
+REVIEW 2 — local repo review (opus-5, full context):
+${JSON.stringify(localReview && localReview.findings || [], null, 1)}
 
-REVIEW 3 — local repo review (opus-5, full context):
-${JSON.stringify(reviews[2] && reviews[2].findings || [], null, 1)}
-
-${contaminated ? 'WARNING: at least one dispatch came back ANCHORED. Treat its AGREEMENT as worthless; its disagreement is still trustworthy.\n' : ''}
 How to weigh them:
-- These three were dispatched blind and in parallel. None saw another's answer.
-  So agreement between them is strong evidence — act on it.
+- These two were dispatched blind and in parallel. Neither saw the other's
+  answer. So agreement between them is strong evidence — act on it.
 - Disagreement is ALWAYS strong signal. Investigate before dismissing.
-- Where Codex and Gemini contradict each other, Codex carries — unless the local
+- Where the two contradict each other, Codex carries — unless the local
   reviewer measured the running system and disproved it. Measurement outranks
-  both models.
-- A finding only Gemini raised is not refuted by the others' silence. The
-  secondary exists precisely to catch what the primary missed.
+  a model's reading.
+- A finding only one reviewer raised is not refuted by the other's silence.
+  Verify it on its merits.
 - Verify file:line citations against this repo before you promote a finding.
   A confident citation can point at the wrong tree.
 
@@ -674,7 +633,7 @@ phase('Fix')
 
 let finalGate = verdict
 if (mustFix.length) {
-  await agent(`You are the FIXER. Three independent reviewers found defects in this change. Fix them.
+  await agent(`You are the FIXER. Two independent reviewers found defects in this change. Fix them.
 
 REPO: ${REPO}
 ${contractBlock()}
@@ -691,7 +650,7 @@ If you believe a finding is wrong, say so with evidence rather than ignoring it.
   log(finalGate && finalGate.exit_code === 0 ? 'Gate still passes after fixes' : 'Gate BROKE after fixes — needs a human')
 }
 
-// ─── Phase 8: Evidence — terra builds the PR section ──────────────────────
+// ─── Phase 8: Evidence — pr-evidence builds the PR section ─────────────────
 
 phase('Evidence')
 
@@ -714,5 +673,4 @@ return {
   build: { slices: slices.map(s => ({ name: s.name, repo: s.repo, model: sliceModel(s.model_hint).model })), results: builds },
   fusion: fused,
   evidence: evidence,
-  anchored: contaminated,
 }

@@ -43,54 +43,50 @@ Two deliberate exceptions:
 
 ## Every agent, in run order
 
-`fuse.js` — 15 call sites:
+`fuse.js` — 13 call sites:
 
 | # | Agent | Phase | Slot | Model | Effort | Notes |
 |---|---|---|---|---|---|---|
 | 1 | `scout:repo` | Scout | BUILDER | fable→`opus` | `max` | The only scout that reads your code |
 | 2 | `scout:codex` | Scout | RUNNER | `sonnet` | `max` | **Wrapper** → `gpt-6.1-sol` `high` |
-| 3 | `scout:gemini` | Scout | RUNNER | `sonnet` | `max` | **Wrapper** → `gemini-3.1-pro-high` |
-| 4 | `gate:design` | Gate | ARCHITECT | `fable` | `xhigh` | Plan + contract + slices + gate |
-| 5 | `gate:redesign` | Gate | ARCHITECT | `fable` | `xhigh` | Only if the baseline gate passed |
-| 6 | `build:<slice>` | Build | slice hint | varies | varies | One per slice, in parallel |
-| 7 | `gate:refreeze` | Build | ARCHITECT | `fable` | `xhigh` | Only on contract drift, once |
-| 8 | `verify:round-N` | Verify | RUNNER | `sonnet` | `max` | Runs the gate, reports the exit code |
-| 9 | `verify:triage` | Verify | ARCHITECT | `fable` | `xhigh` | Round 2 only — code wrong, or gate wrong? |
-| 10 | `fix:round-N` | Verify | BUILDER | `opus` | `max` | Whole tree; checks the seam first |
-| 11 | `review:codex` | Review | RUNNER | `sonnet` | `max` | **Wrapper** → `gpt-6.1-sol` `high` ×2 passes |
-| 12 | `review:gemini` | Review | RUNNER | `sonnet` | `max` | **Wrapper** → `gemini-3.1-pro-high` |
-| 13 | `review:local` | Review | BUILDER | `opus` | `max` | Can actually run things |
-| 14 | `fuse:merge` | Fuse | ARCHITECT | `fable` | `xhigh` | Fresh context — never saw the build |
-| 15 | `fix:apply` | Fix | BUILDER | `opus` | `max` | CRITICAL + HIGH only |
+| 3 | `gate:design` | Gate | ARCHITECT | `fable` | `xhigh` | Plan + contract + slices + gate |
+| 4 | `gate:redesign` | Gate | ARCHITECT | `fable` | `xhigh` | Only if the baseline gate passed |
+| 5 | `build:<slice>` | Build | slice hint | varies | varies | One per slice, in parallel |
+| 6 | `gate:refreeze` | Build | ARCHITECT | `fable` | `xhigh` | Only on contract drift, once |
+| 7 | `verify:round-N` | Verify | RUNNER | `sonnet` | `max` | Runs the gate, reports the exit code |
+| 8 | `verify:triage` | Verify | ARCHITECT | `fable` | `xhigh` | Round 2 only — code wrong, or gate wrong? |
+| 9 | `fix:round-N` | Verify | BUILDER | `opus` | `max` | Whole tree; checks the seam first |
+| 10 | `review:codex` | Review | RUNNER | `sonnet` | `max` | **Wrapper** → `gpt-6.1-sol` `high` ×2 passes |
+| 11 | `review:local` | Review | BUILDER | `opus` | `max` | Can actually run things |
+| 12 | `fuse:merge` | Fuse | ARCHITECT | `fable` | `xhigh` | Fresh context — never saw the build |
+| 13 | `fix:apply` | Fix | BUILDER | `opus` | `max` | CRITICAL + HIGH only |
 
 `pr-evidence.js` — 3 call sites:
 
 | # | Agent | Phase | Model | Effort | Notes |
 |---|---|---|---|---|---|
-| 16 | `classify` | Classify | `sonnet` | `max` | What evidence does this diff owe? |
-| 17 | `evidence:er` | Derive | `opus` | `max` | **Wrapper** → `gpt-6.1-sol` `high` (Codex config default) |
-| 18 | `evidence:ui` | Derive | `opus` | `max` | Drives Playwright for screenshots |
+| 14 | `classify` | Classify | `sonnet` | `max` | What evidence does this diff owe? |
+| 15 | `evidence:er` | Derive | `opus` | `max` | **Wrapper** → `gpt-6.1-sol` `high` (Codex config default) |
+| 16 | `evidence:ui` | Derive | `opus` | `max` | Drives Playwright for screenshots |
 
 ---
 
 ## Wrappers vs. real work
 
-Four agents are **wrappers**. A cheap Claude agent shells out and the real
+Three agents are **wrappers**. A cheap Claude agent shells out and the real
 reasoning happens on another model's bill, outside your context window.
 
 ```
 review:codex   sonnet ──shell──> codex-companion.mjs review + adversarial-review
                                    └─> gpt-6.1-sol @ high
-review:gemini  sonnet ──MCP────> antigravity_review_pr + analyze_code
-                                   └─> gemini-3.1-pro-high
 ```
 
-This is why "three reviewers" does not cost three times one reviewer. Only
-`review:local` spends real Claude reasoning on the diff.
+This is why two reviewers do not cost twice one reviewer. Only `review:local`
+spends real Claude reasoning on the diff.
 
-**Both cross-family slots are optional.** If Codex or Antigravity is unavailable,
-that agent reports the gap and returns empty findings. It never substitutes its
-own opinion for the answer the other model did not give.
+**The cross-family slot is optional.** If Codex is unavailable, its wrapper
+reports the gap and returns empty findings. It never substitutes its own opinion
+for the answer Codex did not give.
 
 ---
 
@@ -104,14 +100,12 @@ own opinion for the answer the other model did not give.
 | slice `ui` = `fable` | Interface work is taste, not throughput. The cost of an ugly-but-working screen is paid by every user, forever. |
 | slice `mechanical` = `sonnet` | Renames, moves, generated code. Genuinely mechanical, and `max` keeps it honest. |
 | Codex = `gpt-6.1-sol` | **Primary** cross-family reviewer. A different lineage catches what the Claude family will not. |
-| Gemini = `gemini-3.1-pro-high` | **Secondary**. Corroboration, and a third independent lineage. Its value is the miss it catches that the other two shared. |
 | Grunt = `gpt-6.1-sol` `high` | Diagram derivation is mechanical. It inherits the Codex config default rather than a cheaper tier; drop `--effort` to `low` if cost matters more. |
 
-**Codex is primary, Gemini is secondary.** Where the two contradict each other,
+**Codex is primary.** Where Codex and the local reviewer contradict each other,
 Codex carries — unless the local reviewer *measured* the running system and
-disproved it. Measurement outranks both models. But a Gemini-only finding is
-never refuted by the others' silence; the secondary exists precisely to catch
-what the primary missed.
+disproved it. Measurement outranks a model's reading. But a finding only one
+reviewer raised is never refuted by the other's silence.
 
 ---
 
@@ -121,18 +115,18 @@ For a two-slice change:
 
 | Path | Agents | Where they go |
 |---|---|---|
-| Happy | **~13** | 3 scout + 1 gate + 2 build + 1 verify + 3 review + 1 fuse + 2 evidence |
-| Typical | ~16 | plus one fix round and its re-verify |
-| Worst | ~22 | plus gate redesign, refreeze, triage, and `maxRounds` fix rounds |
+| Happy | **~11** | 2 scout + 1 gate + 2 build + 1 verify + 2 review + 1 fuse + 2 evidence |
+| Typical | ~14 | plus one fix round and its re-verify |
+| Worst | ~20 | plus gate redesign, refreeze, triage, and `maxRounds` fix rounds |
 
 Duplication exists in exactly two phases — **Scout** and **Review** — and never
 in Build. The phase that writes code has no redundancy at all. The redundancy
 sits on judgment, which is cheap next to implementation.
 
-**The Scout triple is the weakest link in this design.** Two external advisors
-answer the same open question before any code exists, while the repo scout does
-the load-bearing work. If you trim anything, trim `scout:gemini` first and keep
-the Review triple, where the evidence for a second opinion is actual.
+**The Scout pair is the weakest link in this design.** An external advisor
+answers an open question before any code exists, while the repo scout does the
+load-bearing work. If you trim anything, trim `scout:codex` first and keep the
+Review pair, where the evidence for a second opinion is actual.
 
 ---
 
@@ -148,9 +142,8 @@ SLICE_MODELS.ui = { model: 'opus', effort: 'max' }   // no fable available
 Valid Claude models: `fable`, `opus`, `sonnet`, `haiku`.
 Valid efforts: `low`, `medium`, `high`, `xhigh`, `max`.
 
-To change a Codex model, edit the `--model` flag on the relevant
-`codex-companion.mjs` call. Antigravity takes **no** model argument — it
-auto-selects the deepest Gemini Pro tier and rejects one if you pass it.
+To change a Codex model, pass `--model` on the relevant `codex-companion.mjs`
+call. Without one, Codex uses the `model` in `~/.codex/config.toml`.
 
 ---
 

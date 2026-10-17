@@ -1,6 +1,6 @@
 {
   "name": "agent-fusion",
-  "description": "Gate-first multi-model orchestration for Claude Code — prove the work with a gate written before the code, build in parallel against a frozen contract, and review with three independent models.",
+  "description": "Gate-first multi-model orchestration for Claude Code — prove the work with a gate written before the code, build in parallel against a frozen contract, and review with two independent models.",
   "owner": { "name": "Tulsi Prasad", "url": "https://github.com/heytulsiprasad" },
   "plugins": [
     {

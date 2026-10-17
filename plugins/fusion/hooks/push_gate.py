@@ -16,16 +16,12 @@ from pathlib import Path
 
 GATE_CONTEXT = (
     "PUSH GATE: you are about to git push/commit without a cross-model review.\n"
-    "Run BOTH on the diff first, dispatched in the SAME message so neither sees "
-    "the other's answer:\n"
-    "  1. Codex (PRIMARY): codex-companion.mjs review --wait --scope working-tree\n"
-    "  2. Antigravity (SECONDARY): antigravity_review_pr, strictness 'strict'\n"
-    "DISPATCH BLIND. Send the DIFF and let them find the defects. Do NOT write "
+    "Run Codex on the diff first:\n"
+    "  codex-companion.mjs review --wait --scope working-tree\n"
+    "DISPATCH BLIND. Send the DIFF and let Codex find the defects. Do NOT write "
     '"I fixed X by doing Y, confirm that is right" — that buys agreement, not '
-    "review, and two models handed the same claim agree for reasons that have "
-    "nothing to do with the code. Antigravity takes a caller_hypothesis "
-    "parameter for any belief of your own; the Codex path has no such channel, "
-    "so there you simply do not state it.\n"
+    "review. The Codex path has no channel for a belief of your own, so simply "
+    "do not state it.\n"
     "A completed `fuse` run whose gate PASSED already satisfies this — its "
     "Review phase does exactly the above.\n"
     "If the user explicitly said skip review, proceed. Otherwise STOP."
@@ -33,12 +29,10 @@ GATE_CONTEXT = (
 
 CODEX_PENDING_CONTEXT = (
     "PUSH GATE: Codex was dispatched but has NOT returned — the transcript "
-    "shows the call and no result. Codex is the PRIMARY reviewer and runs at "
-    "high (gpt-6.1-sol), so long runs are normal and are NOT a reason to proceed. "
-    "Antigravity answering first is not the review being done; it is the "
-    "SECONDARY advisor, corroboration only. Do NOT push on it alone. Wait for "
-    "Codex (check `codex-companion.mjs status`), do other work meanwhile, then "
-    "fold its findings in — or have the user explicitly say skip review."
+    "shows the call and no result. Codex runs at high (gpt-6.1-sol), so long "
+    "runs are normal and are NOT a reason to proceed. Wait for Codex (check "
+    "`codex-companion.mjs status`), do other work meanwhile, then fold its "
+    "findings in — or have the user explicitly say skip review."
 )
 
 # A dispatch only proves the call was made. These prove an answer came back.
@@ -46,6 +40,9 @@ CODEX_DISPATCH = ("codex-companion.mjs review", "codex-companion.mjs adversarial
 CODEX_ANSWERED = ('"verdict"', "needs-attention", "[codex] Turn completed", "Codex run failed")
 # A fuse run that reached a passing gate has already done the review phase.
 FUSE_SATISFIED = ('"status": "gate-passed"', "'status': 'gate-passed'")
+# Hook output is written to the transcript too, this gate's own reminder
+# included. Its example command would otherwise read as a Codex dispatch.
+HOOK_RECORD = '"type":"hook_'
 
 
 def main() -> int:
@@ -65,16 +62,16 @@ def main() -> int:
             text = Path(transcript).read_text(encoding="utf-8", errors="ignore")
         except OSError:
             text = ""
+        text = "\n".join(l for l in text.splitlines() if HOOK_RECORD not in l)
         if text:
             if any(m in text for m in FUSE_SATISFIED):
                 return 0  # a fuse run already proved and reviewed this change
             codex_sent = any(m in text for m in CODEX_DISPATCH)
             codex_back = any(m in text for m in CODEX_ANSWERED)
-            gemini_sent = "antigravity_review_pr" in text
-            if codex_sent and codex_back and gemini_sent:
-                return 0  # complete review: primary answered, secondary dispatched
-            if codex_sent and gemini_sent and not codex_back:
-                # The exact case where a fast Antigravity answer looks finished.
+            if codex_sent and codex_back:
+                return 0  # complete review: Codex dispatched and answered
+            if codex_sent:
+                # Dispatched with no answer yet. A long Codex run is not a pass.
                 context = CODEX_PENDING_CONTEXT
 
     print(json.dumps({

@@ -1,6 +1,6 @@
 ---
 name: fusion
-description: Run a change through the gate-first fusion harness — an acceptance gate written before any code exists, parallel builders against a frozen contract, and three independent models reviewing the diff. Use when a change is big enough to want planned, proven and cross-reviewed without babysitting, spans more than one repo or surface, or touches something expensive to get wrong (money, migrations, auth, tenant boundaries). Also use when asked to "fuse", "run the harness", or for a multi-model build or review.
+description: Run a change through the gate-first fusion harness — an acceptance gate written before any code exists, parallel builders against a frozen contract, and two independent models reviewing the diff. Use when a change is big enough to want planned, proven and cross-reviewed without babysitting, spans more than one repo or surface, or touches something expensive to get wrong (money, migrations, auth, tenant boundaries). Also use when asked to "fuse", "run the harness", or for a multi-model build or review.
 ---
 
 # Fusion
@@ -31,7 +31,7 @@ local reviewer's checklist and weighted as highly as the built-in one.
 
 ## Before you invoke it
 
-**Check the size honestly.** This spawns 10-18 agents across up to four model
+**Check the size honestly.** This spawns 8-16 agents across two model
 families. A one-line fix does not need it, and running it on one is waste, not
 thoroughness. Use it when the change is genuinely worth proving.
 
@@ -46,8 +46,6 @@ consensus / divergence / discarded.
 
 - `gate-failing` → the gate is the source of truth, not the build summary. Read
   its output before believing anything was finished.
-- `anchored: true` → one advisor dispatch was contaminated. Its *agreement* is
-  worthless; its disagreement still counts.
 - Report the fusion verdict as it came back. Do not quietly drop a finding it
   discarded, and do not promote one it did not raise.
 

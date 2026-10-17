@@ -3,7 +3,7 @@
 **Gate-first multi-model orchestration for Claude Code.**
 
 Write the proof before the code. Build in parallel against a frozen contract.
-Have three models review the diff without letting any of them see each other.
+Have two models review the diff without letting either see the other.
 
 ```
 Workflow({ name: "fusion:fuse", args: { task: "add a deposited_at timestamp to collections", repo: "." } })
@@ -82,7 +82,6 @@ flowchart TD
   subgraph S["1 · SCOUT — blind, parallel"]
     S1["repo reader"]
     S2["Codex"]
-    S3["Gemini"]
   end
 
   S --> G["2 · GATE<br/>plan · <b>contract</b> · slices · gate<br/><i>gate must FAIL first</i>"]
@@ -101,7 +100,6 @@ flowchart TD
 
   subgraph R["5 · REVIEW — blind, parallel, same diff"]
     R1["Codex · primary"]
-    R2["Gemini · secondary"]
     R3["local · can run things"]
   end
 
@@ -167,17 +165,17 @@ Roles are **slots, not model names**. Swap one line and nothing else moves.
 | `RUNNER` | runs the gate, wraps the advisors | `sonnet` max |
 | slice `ui` | interface work — taste, not throughput | `fable` xhigh |
 | slice `mechanical` | renames, moves, generated code | `sonnet` max |
-| Cross-family | independent review and research | Codex, Gemini |
+| Cross-family | independent review and research | Codex |
 
-The cross-family slots are wrappers: a cheap agent shells out and the real
-reasoning happens on the other model's bill, not in your context. "Three
-reviewers" is not three times the cost of one.
+The cross-family slot is a wrapper: a cheap agent shells out and the real
+reasoning happens on the other model's bill, not in your context. Two reviewers
+are not twice the cost of one.
 
-**Full per-agent breakdown — all 18 call sites, which model runs each, and why:
+**Full per-agent breakdown — all 16 call sites, which model runs each, and why:
 [docs/AGENT_MATRIX.md](docs/AGENT_MATRIX.md).**
 
-Both cross-family slots are **optional**. Missing advisors are reported as
-missing — never faked, never silently replaced by the orchestrator's own opinion.
+The cross-family slot is **optional**. A missing advisor is reported as missing
+— never faked, never silently replaced by the orchestrator's own opinion.
 
 ---
 
@@ -234,7 +232,7 @@ for schema changes, before/after screenshots for UI changes.
   Review, a restart starts over. Known gap.
 - **It does not manufacture parallelism.** A single-repo, single-concern task
   returns one slice. Splitting work that does not split adds a seam for nothing.
-- **It is not for small changes.** 10-18 agents across four model families is
+- **It is not for small changes.** 8-16 agents across two model families is
   waste on a one-line fix. There is no floor enforced in code — that judgment is
   yours.
 

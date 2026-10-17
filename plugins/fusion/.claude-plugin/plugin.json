@@ -1,6 +1,6 @@
 {
   "name": "fusion",
-  "description": "Gate-first multi-model orchestration. An acceptance gate is written before any code exists and must fail; parallel builders work against a frozen contract; three models review the diff blind and a fresh one fuses the verdicts.",
+  "description": "Gate-first multi-model orchestration. An acceptance gate is written before any code exists and must fail; parallel builders work against a frozen contract; two models review the diff blind and a fresh one fuses the verdicts.",
   "version": "0.1.1",
   "author": { "name": "Tulsi Prasad", "url": "https://github.com/heytulsiprasad" },
   "homepage": "https://github.com/heytulsiprasad/agent-fusion",
