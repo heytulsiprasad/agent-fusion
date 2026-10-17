@@ -23,7 +23,7 @@ export const meta = {
 // that looks mechanical still decides what to report, and a cheap decision there
 // is the one nobody re-checks. Two exceptions, both deliberate:
 //   fable        → xhigh  (operator rule)
-//   codex family → xhigh  (`--effort` accepts none|minimal|low|medium|high|
+//   codex family → high   (gpt-6.1-sol, owner 2026-10-04; `--effort` accepts none|minimal|low|medium|high|
 //                  xhigh; a raw `codex exec -c model_reasoning_effort=<bogus>`
 //                  is swallowed unvalidated, so "max" is unverifiable there)
 const ARCHITECT = { model: 'fable', effort: 'xhigh' } // plans, writes the gate, fuses
@@ -242,7 +242,7 @@ repos) and say where you read each one.
 Report what is there. Do not propose a design.`,
     { label: 'scout:repo', phase: 'Scout', schema: SCOUT, ...BUILDER }),
 
-  () => agent(`Get an independent technical read on this problem from Codex (gpt-5.6-sol).
+  () => agent(`Get an independent technical read on this problem from Codex (gpt-6.1-sol, high).
 
 TASK: ${TASK}
 REPO: ${REPO}
@@ -250,7 +250,7 @@ REPO: ${REPO}
 Run this ONE Bash command from ${REPO}, read-only (no --write, so Codex cannot
 edit anything), and wait for it:
 
-  ${CODEX} task --effort xhigh "<your prompt>"
+  ${CODEX} task --effort high "<your prompt>"
 
 Pose the OPEN question — how should this class of problem be solved, what have
 others reported going wrong, what are the current versions and limits of anything
@@ -561,7 +561,7 @@ Do NOT be told what the change fixes and do not assume it works. Find the defect
 const reviews = (await parallel([
   () => agent(`${DIFF_BRIEF}
 
-Codex (gpt-5.6-sol) is the PRIMARY reviewer — its verdict governs unless
+Codex (gpt-6.1-sol, high) is the PRIMARY reviewer — its verdict governs unless
 measurement of the running system disproves it.
 
 Run BOTH of these from ${REPO} and wait for each. \`--wait\` keeps the run in the
@@ -637,7 +637,7 @@ TASK: ${TASK}
 REPO: ${REPO}
 GATE RESULT: ${gatePassed ? 'PASSED' : 'STILL FAILING — ' + ((verdict && verdict.output) || 'no output').slice(0, 800)}
 
-REVIEW 1 — Codex (gpt-5.6-sol, PRIMARY):
+REVIEW 1 — Codex (gpt-6.1-sol high, PRIMARY):
 ${JSON.stringify(reviews[0] && reviews[0].findings || [], null, 1)}
 
 REVIEW 2 — Gemini (gemini-3.1-pro-high, SECONDARY):

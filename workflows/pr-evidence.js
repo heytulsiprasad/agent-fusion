@@ -16,11 +16,15 @@ export const meta = {
 // (status/result/cancel) for free. Read-only — no --write, so it cannot edit
 // the repo while deriving a diagram. The path globs the version so a plugin
 // update does not break it.
-// xhigh, not max: `--effort` accepts none|minimal|low|medium|high|xhigh, and a
-// raw `codex exec -c model_reasoning_effort=<bogus>` is swallowed unvalidated,
-// so "max" could never be confirmed to take effect.
+// `--effort` accepts none|minimal|low|medium|high|xhigh — there is no `max`.
+// A raw `codex exec -c model_reasoning_effort=<bogus>` is swallowed unvalidated,
+// so only these six values can be confirmed to take effect.
+// No --model: inherit `model` from ~/.codex/config.toml (gpt-6.1-sol), so the
+// model moves in one place instead of N workflow files.
+// high: owner standard for every Codex run (2026-10-04). Was low here to
+// keep this mermaid-only slot cheap; revert to low if cost matters more.
 const CODEX = 'node "$(ls -1d "$HOME"/.claude/plugins/cache/openai-codex/codex/*/scripts/codex-companion.mjs | sort -V | tail -1)"'
-const TERRA = `${CODEX} task --effort xhigh --model gpt-5.6-terra`
+const TERRA = `${CODEX} task --effort high`
 const SCOUT = { model: 'sonnet', effort: 'max' }
 
 const REPO = (args && args.repo) || '.'

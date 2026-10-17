@@ -34,7 +34,7 @@ GATE_CONTEXT = (
 CODEX_PENDING_CONTEXT = (
     "PUSH GATE: Codex was dispatched but has NOT returned — the transcript "
     "shows the call and no result. Codex is the PRIMARY reviewer and runs at "
-    "xhigh, so long runs are normal and are NOT a reason to proceed. "
+    "high (gpt-6.1-sol), so long runs are normal and are NOT a reason to proceed. "
     "Antigravity answering first is not the review being done; it is the "
     "SECONDARY advisor, corroboration only. Do NOT push on it alone. Wait for "
     "Codex (check `codex-companion.mjs status`), do other work meanwhile, then "

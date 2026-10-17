@@ -37,7 +37,7 @@ Two deliberate exceptions:
 | Exception | Why |
 |---|---|
 | `fable` → `xhigh` | Operator rule |
-| codex family → `xhigh` | `--effort` accepts `none\|minimal\|low\|medium\|high\|xhigh`. A raw `codex exec -c model_reasoning_effort=<bogus>` is swallowed unvalidated, so `max` could never be *confirmed* to take effect. Prefer a value you can verify over one that merely sounds higher. |
+| codex family → `high` | Owner standard for every Codex run (`gpt-6.1-sol`, 2026-10-04). `--effort` accepts `none\|minimal\|low\|medium\|high\|xhigh`. A raw `codex exec -c model_reasoning_effort=<bogus>` is swallowed unvalidated, so `max` could never be *confirmed* to take effect. Prefer a value you can verify over one that merely sounds higher. |
 
 ---
 
@@ -48,7 +48,7 @@ Two deliberate exceptions:
 | # | Agent | Phase | Slot | Model | Effort | Notes |
 |---|---|---|---|---|---|---|
 | 1 | `scout:repo` | Scout | BUILDER | fable→`opus` | `max` | The only scout that reads your code |
-| 2 | `scout:codex` | Scout | RUNNER | `sonnet` | `max` | **Wrapper** → `gpt-5.6-sol` `xhigh` |
+| 2 | `scout:codex` | Scout | RUNNER | `sonnet` | `max` | **Wrapper** → `gpt-6.1-sol` `high` |
 | 3 | `scout:gemini` | Scout | RUNNER | `sonnet` | `max` | **Wrapper** → `gemini-3.1-pro-high` |
 | 4 | `gate:design` | Gate | ARCHITECT | `fable` | `xhigh` | Plan + contract + slices + gate |
 | 5 | `gate:redesign` | Gate | ARCHITECT | `fable` | `xhigh` | Only if the baseline gate passed |
@@ -57,7 +57,7 @@ Two deliberate exceptions:
 | 8 | `verify:round-N` | Verify | RUNNER | `sonnet` | `max` | Runs the gate, reports the exit code |
 | 9 | `verify:triage` | Verify | ARCHITECT | `fable` | `xhigh` | Round 2 only — code wrong, or gate wrong? |
 | 10 | `fix:round-N` | Verify | BUILDER | `opus` | `max` | Whole tree; checks the seam first |
-| 11 | `review:codex` | Review | RUNNER | `sonnet` | `max` | **Wrapper** → `gpt-5.6-sol` ×2 passes |
+| 11 | `review:codex` | Review | RUNNER | `sonnet` | `max` | **Wrapper** → `gpt-6.1-sol` `high` ×2 passes |
 | 12 | `review:gemini` | Review | RUNNER | `sonnet` | `max` | **Wrapper** → `gemini-3.1-pro-high` |
 | 13 | `review:local` | Review | BUILDER | `opus` | `max` | Can actually run things |
 | 14 | `fuse:merge` | Fuse | ARCHITECT | `fable` | `xhigh` | Fresh context — never saw the build |
@@ -68,7 +68,7 @@ Two deliberate exceptions:
 | # | Agent | Phase | Model | Effort | Notes |
 |---|---|---|---|---|---|
 | 16 | `classify` | Classify | `sonnet` | `max` | What evidence does this diff owe? |
-| 17 | `evidence:er` | Derive | `opus` | `max` | **Wrapper** → `gpt-5.6-terra` `xhigh` |
+| 17 | `evidence:er` | Derive | `opus` | `max` | **Wrapper** → `gpt-6.1-sol` `high` (Codex config default) |
 | 18 | `evidence:ui` | Derive | `opus` | `max` | Drives Playwright for screenshots |
 
 ---
@@ -80,7 +80,7 @@ reasoning happens on another model's bill, outside your context window.
 
 ```
 review:codex   sonnet ──shell──> codex-companion.mjs review + adversarial-review
-                                   └─> gpt-5.6-sol @ xhigh
+                                   └─> gpt-6.1-sol @ high
 review:gemini  sonnet ──MCP────> antigravity_review_pr + analyze_code
                                    └─> gemini-3.1-pro-high
 ```
@@ -103,9 +103,9 @@ own opinion for the answer the other model did not give.
 | RUNNER = `sonnet` | Runs a script and reports an exit code, or forwards a prompt to another model. At `max` because even "just report the failures" is a judgment that nothing downstream re-checks. |
 | slice `ui` = `fable` | Interface work is taste, not throughput. The cost of an ugly-but-working screen is paid by every user, forever. |
 | slice `mechanical` = `sonnet` | Renames, moves, generated code. Genuinely mechanical, and `max` keeps it honest. |
-| Codex = `gpt-5.6-sol` | **Primary** cross-family reviewer. A different lineage catches what the Claude family will not. |
+| Codex = `gpt-6.1-sol` | **Primary** cross-family reviewer. A different lineage catches what the Claude family will not. |
 | Gemini = `gemini-3.1-pro-high` | **Secondary**. Corroboration, and a third independent lineage. Its value is the miss it catches that the other two shared. |
-| Grunt = `gpt-5.6-terra` | Diagram derivation is mechanical. Frontier reasoning on an ER diagram is waste. |
+| Grunt = `gpt-6.1-sol` `high` | Diagram derivation is mechanical. It inherits the Codex config default rather than a cheaper tier; drop `--effort` to `low` if cost matters more. |
 
 **Codex is primary, Gemini is secondary.** Where the two contradict each other,
 Codex carries — unless the local reviewer *measured* the running system and
@@ -157,7 +157,7 @@ auto-selects the deepest Gemini Pro tier and rejects one if you pass it.
 ## Measure this, do not trust it
 
 This matrix is asserted, not measured. Nobody has proved that `sonnet` at `max`
-is the right runner, or that `terra` is enough for ER diagrams.
+is the right runner, or that ER diagrams need Codex at `high`.
 
 The honest way to settle it is Gas Town's `gt-model-eval` approach: a promptfoo
 suite that runs the same task across model tiers and scores them, split into
