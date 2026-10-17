@@ -63,6 +63,18 @@ class PushGate(unittest.TestCase):
     def test_dispatched_without_answer_says_pending(self):
         self.assertIn("has NOT returned", gate(bash(f"node {COMPANION} review --wait")))
 
+    def test_only_an_answer_after_the_dispatch_counts(self):
+        review = bash(f"node {COMPANION} review --background")
+        earlier_task = [bash(f"node {COMPANION} task 'research X'"), result(ANSWER)]
+        prompt = entry("user", message={"role": "user", "content": "fix whatever needs-attention says"})
+        self.assertIn("has NOT returned", gate(*earlier_task, review))
+        self.assertIn("has NOT returned", gate(prompt, review))
+
+    def test_failed_review_is_not_an_answer(self):
+        # What codex plugin 1.0.5 prints when a review fails.
+        failed = result("[codex] Turn failed.\n# Codex Review\n\nTarget: working tree diff\n\nCodex review failed.")
+        self.assertIn("has NOT returned", gate(bash(f"node {COMPANION} review --wait"), failed))
+
     def test_no_review_gets_the_full_reminder(self):
         self.assertIn("without a cross-model review", gate(result("edited a file")))
 

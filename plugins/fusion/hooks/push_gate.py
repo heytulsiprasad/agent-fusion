@@ -62,17 +62,17 @@ def main() -> int:
             text = Path(transcript).read_text(encoding="utf-8", errors="ignore")
         except OSError:
             text = ""
-        text = "\n".join(l for l in text.splitlines() if HOOK_RECORD not in l)
-        if text:
-            if any(m in text for m in FUSE_SATISFIED):
-                return 0  # a fuse run already proved and reviewed this change
-            codex_sent = any(m in text for m in CODEX_DISPATCH)
-            codex_back = any(m in text for m in CODEX_ANSWERED)
-            if codex_sent and codex_back:
+        lines = [l for l in text.splitlines() if HOOK_RECORD not in l]
+        if any(m in l for l in lines for m in FUSE_SATISFIED):
+            return 0  # a fuse run already proved and reviewed this change
+        # Only an answer AFTER the latest review dispatch is that review's. An
+        # earlier Codex task, or a marker word in a prompt, does not count.
+        sent = max((i for i, l in enumerate(lines) if any(m in l for m in CODEX_DISPATCH)), default=-1)
+        if sent >= 0:
+            if any(m in l for l in lines[sent + 1:] for m in CODEX_ANSWERED):
                 return 0  # complete review: Codex dispatched and answered
-            if codex_sent:
-                # Dispatched with no answer yet. A long Codex run is not a pass.
-                context = CODEX_PENDING_CONTEXT
+            # Dispatched with no answer yet. A long Codex run is not a pass.
+            context = CODEX_PENDING_CONTEXT
 
     print(json.dumps({
         "hookSpecificOutput": {
